@@ -8,7 +8,12 @@ import threading
 from playsound import playsound
 import threading
 =======
+
+from playsound import playsound
+import threading
+=======
 import random
+
 
 
 
@@ -25,6 +30,18 @@ class TicTacToe:
         self.symbols = {"X":"❌", "O":"⭕"}
         self.create_widgets()
 
+    def create_widgets(self):
+        self.label_turn = tk.Label(self.root, text="Turn: X", font=("Arial", 14, "bold"), fg="blue")
+        self.label_turn.grid(row=0, column=0, columnspan=3, pady=5)
+
+        self.label_score = tk.Label(self.root, text=self.get_score_text(), font=("Arial", 12))
+        self.label_score.grid(row=1, column=0, columnspan=3, pady=5)
+
+=======
+
+        self.symbols = {"X":"❌", "O":"⭕"}
+        self.create_widgets()
+
 =======
         self.create_widgets()
 
@@ -36,10 +53,18 @@ class TicTacToe:
         self.label_score.grid(row=0, column=0, columnspan=3, pady=10)
 
         # Buttons
+
         for r in range(3):
             for c in range(3):
                 btn = tk.Button(self.root, text=" ", width=6, height=3, font=("Arial", 24),
                                 command=lambda row=r, col=c: self.player_move(row, col))
+
+                btn.grid(row=r+2, column=c, padx=5, pady=5)
+                self.buttons[r][c] = btn
+
+        self.btn_reset = tk.Button(self.root, text="Reset Game", command=self.reset_game)
+        self.btn_reset.grid(row=5, column=0, columnspan=3, pady=10)
+=======
                 btn.grid(row=r+1, column=c)
                 self.buttons[r][c] = btn
 
@@ -47,9 +72,22 @@ class TicTacToe:
         self.btn_reset = tk.Button(self.root, text="Reset Game", command=self.reset_game)
         self.btn_reset.grid(row=4, column=0, columnspan=3, pady=10)
 
+
     def get_score_text(self):
         return f"Score → X: {self.scores['X']} | O: {self.scores['O']} | Ties: {self.scores['Tie']}"
 
+
+    def play_sound(self, filename):
+        threading.Thread(target=lambda: playsound(filename), daemon=True).start()
+
+    def player_move(self, row, col):
+        if self.board[row][col] != " ":
+            return
+        self.make_move(row, col, "X")
+        if self.check_game_over("X"):
+            return
+        self.root.after(500, self.ai_move)
+=======
     def player_move(self, row, col):
         if self.board[row][col] != " ":
             return
@@ -162,6 +200,7 @@ class TicTacToe:
             self.current_player = "X"
 
 
+
     def ai_move(self):
         best_score = -float('inf')
         best_move = None
@@ -175,6 +214,18 @@ class TicTacToe:
                         best_score = score
                         best_move = (r, c)
 
+
+        if best_move:
+            r, c = best_move
+            self.make_move(r, c, self.ai_player)
+            self.check_game_over(self.ai_player)
+
+    def make_move(self, row, col, player):
+        self.board[row][col] = player
+        self.buttons[row][col].config(text=self.symbols[player])
+        self.play_sound('move.mp3')
+        self.update_turn_label()
+=======
 
         if best_move:
             r, c = best_move
@@ -237,6 +288,32 @@ class TicTacToe:
                         self.board[r][c] = " "
 
                         best_score = min(best_score, score)
+            return best_score
+
+    def check_game_over(self, player):
+        if self.check_winner(player):
+            self.scores[player] += 1
+            self.update_scoreboard()
+            self.highlight_winning_line(player)
+            self.play_sound('win.mp3' if player == "X" else 'lose.mp3')
+            self.ask_play_again(f"Player {player} wins!")
+            return True
+        elif self.is_tie():
+            self.scores["Tie"] += 1
+            self.update_scoreboard()
+            self.play_sound('tie.mp3')
+            self.ask_play_again("It's a Tie!")
+            return True
+        return False
+
+    def check_winner(self, player):
+        for i in range(3):
+            if all(self.board[i][j]==player for j in range(3)) or all(self.board[j][i]==player for j in range(3)):
+                return True
+        if all(self.board[i][i]==player for i in range(3)) or all(self.board[i][2-i]==player for i in range(3)):
+=======
+
+                        best_score = min(best_score, score)
 =======
                         best_score = min(score, best_score)
 
@@ -254,10 +331,60 @@ class TicTacToe:
         if all(self.board[i][i] == player for i in range(3)) or all(self.board[i][2-i] == player for i in range(3)):
 
 
+
             return True
         return False
 
     def is_tie(self):
+
+        return all(self.board[r][c]!=" " for r in range(3) for c in range(3))
+
+    def highlight_winning_line(self, player):
+        for i in range(3):
+            if all(self.board[i][j]==player for j in range(3)):
+                for j in range(3): self.animate_button(self.buttons[i][j])
+                return
+            if all(self.board[j][i]==player for j in range(3)):
+                for j in range(3): self.animate_button(self.buttons[j][i])
+                return
+        if all(self.board[i][i]==player for i in range(3)):
+            for i in range(3): self.animate_button(self.buttons[i][i])
+            return
+        if all(self.board[i][2-i]==player for i in range(3)):
+            for i in range(3): self.animate_button(self.buttons[i][2-i])
+            return
+
+    def animate_button(self, btn, count=0):
+        if count > 5:
+            btn.config(bg="SystemButtonFace")
+            return
+        btn.config(bg="yellow" if count%2==0 else "red")
+        self.root.after(200, lambda: self.animate_button(btn, count+1))
+
+    def ask_play_again(self, message):
+        self.root.after(500, lambda: (
+            messagebox.askyesno("Game Over", f"{message}\nDo you want to play again?") and self.reset_board()
+        ))
+
+    def reset_board(self):
+        self.board = [[" "]*3 for _ in range(3)]
+        for r in range(3):
+            for c in range(3):
+                self.buttons[r][c].config(text=" ", bg="SystemButtonFace")
+        self.update_turn_label()
+
+    def reset_game(self):
+        self.reset_board()
+        self.scores = {"X":0, "O":0, "Tie":0}
+        self.update_scoreboard()
+
+    def update_scoreboard(self):
+        self.label_score.config(text=self.get_score_text())
+
+    def update_turn_label(self):
+        self.current_player = "X"
+        self.label_turn.config(text=f"Turn: {self.current_player}", fg="blue")
+=======
 
         return all(self.board[r][c]!=" " for r in range(3) for c in range(3))
 
@@ -314,6 +441,7 @@ class TicTacToe:
 
     def update_scoreboard(self):
         self.label_score.config(text=self.get_score_text())
+
 
 if __name__ == "__main__":
     root = tk.Tk()

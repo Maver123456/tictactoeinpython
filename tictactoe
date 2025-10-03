@@ -1,209 +1,70 @@
 import tkinter as tk
 from tkinter import messagebox
-
 from playsound import playsound
 import threading
-=======
-
-from playsound import playsound
-import threading
-=======
-
-from playsound import playsound
-import threading
-=======
-import random
-
-
 
 
 class TicTacToe:
-    def __init__(self, root):
+    def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("🎮 Tic Tac Toe")
-        self.board = [[" "]*3 for _ in range(3)]
-        self.buttons = [[None]*3 for _ in range(3)]
+
+        # Game state
+        self.board = [[" " for _ in range(3)] for _ in range(3)]
         self.current_player = "X"
         self.ai_player = "O"
-        self.scores = {"X":0, "O":0, "Tie":0}
+        self.symbols = {"X": "❌", "O": "⭕"}
+        self.scores = {"X": 0, "O": 0, "Tie": 0}
 
-        self.symbols = {"X":"❌", "O":"⭕"}
+        # UI elements
+        self.buttons = [[None for _ in range(3)] for _ in range(3)]
+        self.label_score = None
+        self.btn_reset = None
+
         self.create_widgets()
 
+    # ---------------- UI ---------------- #
     def create_widgets(self):
-        self.label_turn = tk.Label(self.root, text="Turn: X", font=("Arial", 14, "bold"), fg="blue")
-        self.label_turn.grid(row=0, column=0, columnspan=3, pady=5)
-
-        self.label_score = tk.Label(self.root, text=self.get_score_text(), font=("Arial", 12))
-        self.label_score.grid(row=1, column=0, columnspan=3, pady=5)
-
-=======
-
-        self.symbols = {"X":"❌", "O":"⭕"}
-        self.create_widgets()
-
-=======
-        self.create_widgets()
-
-
-
-    def create_widgets(self):
-        # Scoreboard
+        """Create scoreboard, grid buttons, and reset button."""
         self.label_score = tk.Label(self.root, text=self.get_score_text(), font=("Arial", 12))
         self.label_score.grid(row=0, column=0, columnspan=3, pady=10)
 
-        # Buttons
-
         for r in range(3):
             for c in range(3):
-                btn = tk.Button(self.root, text=" ", width=6, height=3, font=("Arial", 24),
-                                command=lambda row=r, col=c: self.player_move(row, col))
+                self.buttons[r][c] = tk.Button(
+                    self.root, text=" ", width=6, height=3, font=("Arial", 24),
+                    command=lambda row=r, col=c: self.player_move(row, col)
+                )
+                self.buttons[r][c].grid(row=r + 1, column=c)
 
-                btn.grid(row=r+2, column=c, padx=5, pady=5)
-                self.buttons[r][c] = btn
-
-        self.btn_reset = tk.Button(self.root, text="Reset Game", command=self.reset_game)
-        self.btn_reset.grid(row=5, column=0, columnspan=3, pady=10)
-=======
-                btn.grid(row=r+1, column=c)
-                self.buttons[r][c] = btn
-
-        # Reset button
-        self.btn_reset = tk.Button(self.root, text="Reset Game", command=self.reset_game)
+        self.btn_reset = tk.Button(self.root, text="🔄 Reset Game", command=self.reset_game, font=("Arial", 12))
         self.btn_reset.grid(row=4, column=0, columnspan=3, pady=10)
 
+    def update_scoreboard(self):
+        self.label_score.config(text=self.get_score_text())
 
-    def get_score_text(self):
+    def get_score_text(self) -> str:
         return f"Score → X: {self.scores['X']} | O: {self.scores['O']} | Ties: {self.scores['Tie']}"
 
-
-    def play_sound(self, filename):
-        threading.Thread(target=lambda: playsound(filename), daemon=True).start()
-
-    def player_move(self, row, col):
+    # ---------------- Gameplay ---------------- #
+    def player_move(self, row: int, col: int):
+        """Handle player (X) move."""
         if self.board[row][col] != " ":
             return
+
         self.make_move(row, col, "X")
-        if self.check_game_over("X"):
+        self.play_sound("move.mp3")
+
+        if self.check_end("X"):
             return
+
+        # AI move after short delay
         self.root.after(500, self.ai_move)
-=======
-    def player_move(self, row, col):
-        if self.board[row][col] != " ":
-            return
-        self.board[row][col] = self.current_player
-
-        self.buttons[row][col].config(text=self.symbols[self.current_player])
-        threading.Thread(target=lambda: playsound('move.mp3')).start()
-
-        if self.check_winner(self.current_player):
-
-            self.scores[self.current_player] += 1
-            self.update_scoreboard()
-            self.highlight_winning_line(self.current_player)
-=======
-            self.highlight_winning_line(self.current_player)
-            self.scores[self.current_player] += 1
-            self.update_scoreboard()
-
-            threading.Thread(target=lambda: playsound('win.mp3')).start()
-            self.root.after(1000, self.reset_board)
-            return
-        elif self.is_tie():
-            self.scores["Tie"] += 1
-            self.update_scoreboard()
-            threading.Thread(target=lambda: playsound('tie.mp3')).start()
-            self.root.after(1000, self.reset_board)
-            return
-
-
-        # AI Move
-        self.current_player = self.ai_player
-        self.root.after(500, self.ai_move)
-        self.current_player = "X"
-=======
-        # AI move
-        if self.current_player == "X":
-            self.current_player = self.ai_player
-            self.root.after(500, self.ai_move)
-            self.current_player = "X"
 
     def ai_move(self):
-        empty = [(r, c) for r in range(3) for c in range(3) if self.board[r][c] == " "]
-        if empty:
-            r, c = empty[0]  # simple AI, first available
-            self.board[r][c] = self.ai_player
-            self.buttons[r][c].config(text=self.symbols[self.ai_player])
-            threading.Thread(target=lambda: playsound('move.mp3')).start()
-            if self.check_winner(self.ai_player):
-                self.highlight_winning_line(self.ai_player)
-                self.scores[self.ai_player] += 1
-                self.update_scoreboard()
-                threading.Thread(target=lambda: playsound('lose.mp3')).start()
-                self.root.after(1000, self.reset_board)
-            elif self.is_tie():
-                self.scores["Tie"] += 1
-                self.update_scoreboard()
-                threading.Thread(target=lambda: playsound('tie.mp3')).start()
-                self.root.after(1000, self.reset_board)
+        """AI move using minimax."""
+        best_score, best_move = -float('inf'), None
 
-    def highlight_winning_line(self, player):
-        for i in range(3):
-            if all(self.board[i][j]==player for j in range(3)):
-                for j in range(3):
-                    self.animate_button(self.buttons[i][j])
-                return
-            if all(self.board[j][i]==player for j in range(3)):
-                for j in range(3):
-                    self.animate_button(self.buttons[j][i])
-                return
-        if all(self.board[i][i]==player for i in range(3)):
-            for i in range(3):
-                self.animate_button(self.buttons[i][i])
-            return
-        if all(self.board[i][2-i]==player for i in range(3)):
-            for i in range(3):
-                self.animate_button(self.buttons[i][2-i])
-            return
-
-    def animate_button(self, btn, count=0):
-        if count > 5:
-            btn.config(bg="SystemButtonFace")
-            return
-        btn.config(bg="yellow" if count%2==0 else "red")
-        self.root.after(200, lambda: self.animate_button(btn, count+1))
-
-    def check_winner(self, player):
-        for i in range(3):
-            if all(self.board[i][j]==player for j in range(3)) or all(self.board[j][i]==player for j in range(3)):
-                return True
-        if all(self.board[i][i]==player for i in range(3)) or all(self.board[i][2-i]==player for i in range(3)):
-=======
-        self.buttons[row][col].config(text=self.current_player)
-        if self.check_winner(self.current_player):
-            messagebox.showinfo("Game Over", f"🎉 Player {self.current_player} wins!")
-            self.scores[self.current_player] += 1
-            self.update_scoreboard()
-            self.reset_board()
-            return
-        elif self.is_tie():
-            messagebox.showinfo("Game Over", "It's a tie!")
-            self.scores["Tie"] += 1
-            self.update_scoreboard()
-            self.reset_board()
-            return
-
-        # Switch to AI
-        if self.current_player == "X":
-            self.current_player = self.ai_player
-            self.ai_move()
-            self.current_player = "X"
-
-
-
-    def ai_move(self):
-        best_score = -float('inf')
-        best_move = None
         for r in range(3):
             for c in range(3):
                 if self.board[r][c] == " ":
@@ -211,240 +72,117 @@ class TicTacToe:
                     score = self.minimax(False)
                     self.board[r][c] = " "
                     if score > best_score:
-                        best_score = score
-                        best_move = (r, c)
-
+                        best_score, best_move = score, (r, c)
 
         if best_move:
             r, c = best_move
             self.make_move(r, c, self.ai_player)
-            self.check_game_over(self.ai_player)
+            self.play_sound("move.mp3")
+            self.check_end(self.ai_player)
 
-    def make_move(self, row, col, player):
-        self.board[row][col] = player
-        self.buttons[row][col].config(text=self.symbols[player])
-        self.play_sound('move.mp3')
-        self.update_turn_label()
-=======
-
-        if best_move:
-            r, c = best_move
-            self.board[r][c] = self.ai_player
-            self.buttons[r][c].config(text=self.symbols[self.ai_player])
-            threading.Thread(target=lambda: playsound('move.mp3')).start()
-            if self.check_winner(self.ai_player):
-                self.scores[self.ai_player] += 1
-                self.update_scoreboard()
-                self.highlight_winning_line(self.ai_player)
-                threading.Thread(target=lambda: playsound('lose.mp3')).start()
-                self.root.after(1000, self.reset_board)
-            elif self.is_tie():
-                self.scores["Tie"] += 1
-                self.update_scoreboard()
-                threading.Thread(target=lambda: playsound('tie.mp3')).start()
-                self.root.after(1000, self.reset_board)
-=======
-        if best_move:
-            r, c = best_move
-            self.board[r][c] = self.ai_player
-            self.buttons[r][c].config(text=self.ai_player)
-            if self.check_winner(self.ai_player):
-                messagebox.showinfo("Game Over", f"💀 AI ({self.ai_player}) wins!")
-                self.scores[self.ai_player] += 1
-                self.update_scoreboard()
-                self.reset_board()
-            elif self.is_tie():
-                messagebox.showinfo("Game Over", "It's a tie!")
-                self.scores["Tie"] += 1
-                self.update_scoreboard()
-                self.reset_board()
-
-
-    def minimax(self, is_maximizing):
+    def minimax(self, is_maximizing: bool) -> int:
+        """Recursive minimax algorithm for AI."""
         if self.check_winner(self.ai_player):
             return 1
-        elif self.check_winner("X"):
+        if self.check_winner("X"):
             return -1
-        elif self.is_tie():
+        if self.is_tie():
             return 0
 
         if is_maximizing:
-            best_score = -float('inf')
-            for r in range(3):
-                for c in range(3):
-                    if self.board[r][c] == " ":
-                        self.board[r][c] = self.ai_player
-                        score = self.minimax(False)
-                        self.board[r][c] = " "
-
-            return best_score
+            return max(
+                self.try_move(r, c, self.ai_player, False)
+                for r in range(3) for c in range(3) if self.board[r][c] == " "
+            )
         else:
-            best_score = float('inf')
-            for r in range(3):
-                for c in range(3):
-                    if self.board[r][c] == " ":
-                        self.board[r][c] = "X"
-                        score = self.minimax(True)
-                        self.board[r][c] = " "
+            return min(
+                self.try_move(r, c, "X", True)
+                for r in range(3) for c in range(3) if self.board[r][c] == " "
+            )
 
-                        best_score = min(best_score, score)
-            return best_score
+    def try_move(self, r: int, c: int, player: str, next_turn: bool) -> int:
+        """Try a move for minimax and revert."""
+        self.board[r][c] = player
+        score = self.minimax(next_turn)
+        self.board[r][c] = " "
+        return score
 
-    def check_game_over(self, player):
+    # ---------------- Utility ---------------- #
+    def make_move(self, row: int, col: int, player: str):
+        """Mark the board and update button."""
+        self.board[row][col] = player
+        self.buttons[row][col].config(text=self.symbols[player])
+
+    def check_end(self, player: str) -> bool:
+        """Check for win or tie after a move."""
         if self.check_winner(player):
             self.scores[player] += 1
             self.update_scoreboard()
             self.highlight_winning_line(player)
-            self.play_sound('win.mp3' if player == "X" else 'lose.mp3')
-            self.ask_play_again(f"Player {player} wins!")
+            self.play_sound("win.mp3" if player == "X" else "lose.mp3")
+            self.root.after(1000, self.reset_board)
             return True
-        elif self.is_tie():
+        if self.is_tie():
             self.scores["Tie"] += 1
             self.update_scoreboard()
-            self.play_sound('tie.mp3')
-            self.ask_play_again("It's a Tie!")
+            self.play_sound("tie.mp3")
+            self.root.after(1000, self.reset_board)
             return True
         return False
 
-    def check_winner(self, player):
-        for i in range(3):
-            if all(self.board[i][j]==player for j in range(3)) or all(self.board[j][i]==player for j in range(3)):
-                return True
-        if all(self.board[i][i]==player for i in range(3)) or all(self.board[i][2-i]==player for i in range(3)):
-=======
+    def check_winner(self, player: str) -> bool:
+        """Check if a player has won."""
+        lines = (
+            [self.board[i] for i in range(3)] +  # rows
+            [[self.board[j][i] for j in range(3)] for i in range(3)] +  # cols
+            [[self.board[i][i] for i in range(3)], [self.board[i][2 - i] for i in range(3)]]  # diagonals
+        )
+        return any(all(cell == player for cell in line) for line in lines)
 
-                        best_score = min(best_score, score)
-=======
-                        best_score = min(score, best_score)
-
-            return best_score
-
-    def check_winner(self, player):
-        for i in range(3):
-
-            if all(self.board[i][j]==player for j in range(3)) or all(self.board[j][i]==player for j in range(3)):
-                return True
-        if all(self.board[i][i]==player for i in range(3)) or all(self.board[i][2-i]==player for i in range(3)):
-=======
-            if all(self.board[i][j] == player for j in range(3)) or all(self.board[j][i] == player for j in range(3)):
-                return True
-        if all(self.board[i][i] == player for i in range(3)) or all(self.board[i][2-i] == player for i in range(3)):
-
-
-
-            return True
-        return False
-
-    def is_tie(self):
-
-        return all(self.board[r][c]!=" " for r in range(3) for c in range(3))
-
-    def highlight_winning_line(self, player):
-        for i in range(3):
-            if all(self.board[i][j]==player for j in range(3)):
-                for j in range(3): self.animate_button(self.buttons[i][j])
-                return
-            if all(self.board[j][i]==player for j in range(3)):
-                for j in range(3): self.animate_button(self.buttons[j][i])
-                return
-        if all(self.board[i][i]==player for i in range(3)):
-            for i in range(3): self.animate_button(self.buttons[i][i])
-            return
-        if all(self.board[i][2-i]==player for i in range(3)):
-            for i in range(3): self.animate_button(self.buttons[i][2-i])
-            return
-
-    def animate_button(self, btn, count=0):
-        if count > 5:
-            btn.config(bg="SystemButtonFace")
-            return
-        btn.config(bg="yellow" if count%2==0 else "red")
-        self.root.after(200, lambda: self.animate_button(btn, count+1))
-
-    def ask_play_again(self, message):
-        self.root.after(500, lambda: (
-            messagebox.askyesno("Game Over", f"{message}\nDo you want to play again?") and self.reset_board()
-        ))
-
-    def reset_board(self):
-        self.board = [[" "]*3 for _ in range(3)]
-        for r in range(3):
-            for c in range(3):
-                self.buttons[r][c].config(text=" ", bg="SystemButtonFace")
-        self.update_turn_label()
-
-    def reset_game(self):
-        self.reset_board()
-        self.scores = {"X":0, "O":0, "Tie":0}
-        self.update_scoreboard()
-
-    def update_scoreboard(self):
-        self.label_score.config(text=self.get_score_text())
-
-    def update_turn_label(self):
-        self.current_player = "X"
-        self.label_turn.config(text=f"Turn: {self.current_player}", fg="blue")
-=======
-
-        return all(self.board[r][c]!=" " for r in range(3) for c in range(3))
-
-    def highlight_winning_line(self, player):
-        for i in range(3):
-            if all(self.board[i][j]==player for j in range(3)):
-                for j in range(3): self.animate_button(self.buttons[i][j])
-                return
-            if all(self.board[j][i]==player for j in range(3)):
-                for j in range(3): self.animate_button(self.buttons[j][i])
-                return
-        if all(self.board[i][i]==player for i in range(3)):
-            for i in range(3): self.animate_button(self.buttons[i][i])
-            return
-        if all(self.board[i][2-i]==player for i in range(3)):
-            for i in range(3): self.animate_button(self.buttons[i][2-i])
-            return
-
-    def animate_button(self, btn, count=0):
-        if count > 5:
-            btn.config(bg="SystemButtonFace")
-            return
-        btn.config(bg="yellow" if count%2==0 else "red")
-        self.root.after(200, lambda: self.animate_button(btn, count+1))
-=======
-
-        return all(self.board[r][c]!=" " for r in range(3) for c in range(3))
-=======
+    def is_tie(self) -> bool:
         return all(self.board[r][c] != " " for r in range(3) for c in range(3))
 
+    def highlight_winning_line(self, player: str):
+        """Highlight winning row/col/diagonal with animation."""
+        for i in range(3):
+            if all(self.board[i][j] == player for j in range(3)):
+                for j in range(3): self.animate_button(self.buttons[i][j]); return
+            if all(self.board[j][i] == player for j in range(3)):
+                for j in range(3): self.animate_button(self.buttons[j][i]); return
 
+        if all(self.board[i][i] == player for i in range(3)):
+            for i in range(3): self.animate_button(self.buttons[i][i]); return
+        if all(self.board[i][2 - i] == player for i in range(3)):
+            for i in range(3): self.animate_button(self.buttons[i][2 - i]); return
+
+    def animate_button(self, btn: tk.Button, count=0):
+        """Blink winning buttons."""
+        if count > 5:
+            btn.config(bg="SystemButtonFace")
+            return
+        btn.config(bg="yellow" if count % 2 == 0 else "red")
+        self.root.after(200, lambda: self.animate_button(btn, count + 1))
 
     def reset_board(self):
-        self.board = [[" "]*3 for _ in range(3)]
+        """Clear board but keep scores."""
+        self.board = [[" " for _ in range(3)] for _ in range(3)]
         for r in range(3):
             for c in range(3):
-
                 self.buttons[r][c].config(text=" ", bg="SystemButtonFace")
 
     def reset_game(self):
+        """Reset everything including scores."""
         self.reset_board()
-        self.scores = {"X":0, "O":0, "Tie":0}
+        self.scores = {"X": 0, "O": 0, "Tie": 0}
         self.update_scoreboard()
 
-=======
-=======
-                self.buttons[r][c].config(text=" ")
-
-    def reset_game(self):
-        self.scores = {"X":0, "O":0, "Tie":0}
-        self.update_scoreboard()
-        self.reset_board()
-
-
-    def update_scoreboard(self):
-        self.label_score.config(text=self.get_score_text())
+    @staticmethod
+    def play_sound(file: str):
+        """Play sound in a separate thread."""
+        threading.Thread(target=lambda: playsound(file), daemon=True).start()
 
 
 if __name__ == "__main__":
     root = tk.Tk()
     game = TicTacToe(root)
     root.mainloop()
-
